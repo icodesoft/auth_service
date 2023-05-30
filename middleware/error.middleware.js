@@ -4,6 +4,7 @@ exports.error_handle = (err, req, res, next) => {
         statusCode = 401;
     }
 
-    console.error(new Date().toLocaleString(), req.originalUrl, statusCode, err.message, err.stack);
-    return res.status(statusCode).json({ 'message': err.message });
+    console.error(new Date().toLocaleString(), req.originalUrl, statusCode, err.message);
+    console.error(err.stack);
+    return res.json(undefined, err.message, statusCode);
 }

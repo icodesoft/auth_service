@@ -43,13 +43,26 @@ app.use(express.urlencoded({ extended: false }))
 app.use(express.json());
 ```
 
+## 重写res.json方法
+
+```JS
+app.use(function (req, res, next) {
+  let json = res.json;
+  res.json = function (data, message = 'success', status = 200) {
+    json.call(this, { data, message}, status);
+  }
+  next()
+})
+```
+
 ## 配置全局异常处理
 
 ```JS
 app.use((err, req, res, next) => {
     const statusCode = err.statusCode || 500;
-    console.error(new Date().toLocaleString(), req.originalUrl, statusCode, err.message, err.stack);
-    return res.status(statusCode).json({ 'message': err.message });
+    console.error(new Date().toLocaleString(), req.originalUrl, statusCode, err.message);
+    console.error(err.stack);
+    return res.json(undefined, err.message, statusCode);
 });
 ```
 
@@ -327,7 +340,7 @@ exports.init = () => {
   exports.login = (req,res) => {
       const { username, password } = req.body
       let token = jwtUtil.createToken({ username })
-      res.send(token)
+      res.json(token)
   }
   ```
 
@@ -485,7 +498,7 @@ https://sequelize.org/docs/v6/core-concepts/model-basics/
   
   router.get('/users', asyncHandler(async (req, res) => {
     const users = await User.findAll();
-    res.send(users);
+    res.json(users);
   }));
   ```
 

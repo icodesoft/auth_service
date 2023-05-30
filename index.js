@@ -16,28 +16,28 @@ const userRouter = require('./route/user.route');
 const testRouter = require('./route/test.route');
 const { error_handle } = require('./middleware/error.middleware');
 
-const resOkAndError = function (req, res, next) {
-    console.log("I am global middleware.")
-    res.ok = function (data, msg='ok', status = 200) {
-      res.status(status).send({
-        status,
-        message: msg,
-        data
-      })
-    }
+// const resOkAndError = function (req, res, next) {
+//     console.log("I am global middleware.")
+//     res.ok = function (data, msg='ok', status = 200) {
+//       res.status(status).send({
+//         status,
+//         message: msg,
+//         data
+//       })
+//     }
   
-    res.error = function (err, status = 500) {
+//     res.error = function (err, status = 500) {
       
-      res.status(status).send({
-        // 状态
-        status,
-        // 状态描述，判断 err 是 错误对象 还是 字符串
-        message: err instanceof Error ? err.message : err,
-      })
-    }
+//       res.status(status).send({
+//         // 状态
+//         status,
+//         // 状态描述，判断 err 是 错误对象 还是 字符串
+//         message: err instanceof Error ? err.message : err,
+//       })
+//     }
 
-    next()
-}
+//     next()
+// }
 
 // 解决跨域
 // NOTE: 必须放在静态资源配置之后 
@@ -52,13 +52,20 @@ app.use(express.json());
 // 默认解析结果会赋值在 req.auth，也可以通过 requestProperty 来修改：user\/
 app.use(expressJWT({ secret: rsaUtil.getPublicKey(), algorithms: ["RS256"] }).unless({ path: ['/health', /^\/api\//] }));
 
-// 注册全局中间件，扩展res两个新的功能ok 和 error.
-app.use(resOkAndError);
+// // 注册全局中间件，扩展res两个新的功能ok 和 error.
+// app.use(resOkAndError);
+app.use(function (req, res, next) {
+  let json = res.json;
+  res.json = function (data, message = 'success', status = 200) {
+    json.call(this, { data, message}, status);
+  }
+  next()
+})
 
 app.use('/api', userRouter, testRouter)
 
 app.get('/health', (req, res) => {
-    res.json({ "status": "UP" })
+    res.json({ "status": "UP" });
 })
 
 // 全局异常处理

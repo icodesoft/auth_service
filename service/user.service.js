@@ -5,6 +5,7 @@ const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs')
 
 const request = require('request');
+const { NotFoundError, InvalidParameterError } = require('../exceptions/error');
 
 exports.register = async (req, res) => {
     const { username, password, nickname, email, user_pic } = req.body
@@ -57,28 +58,31 @@ exports.login = (req, res) => {
     // token 存入缓存
 
 
-    res.send(token)
+    res.json(token)
 }
 
 exports.authorize = (req, res) => {
     let { response_type, client_id, redirect_uri, state } = req.query;
     if (response_type != 'code') {
-        return res.status(400).json({ "message": response_type + "is not supported" })
+        throw new InvalidParameterError(response_type + "is not supported");
     }
 }
 
 exports.getUserById = (req, res) => {
+    if (req.params.id !== 1) {
+        throw new NotFoundError('User is not exist');
+    }
     let user = { "id": req.params.id, "name": "ggary", "email": "gary@outlook.com" }
-    res.status(200).json({ "message": null, "data": user })
+    res.json(user, 'ok');
 }
 
 exports.getUserByName = (req, res) => {
     let user = { "id": 1, "name": req.query.name, "email": "gary@outlook.com" }
-    res.status(200).json({ "message": null, "data": user })
+    res.json(user)
 }
 
 exports.getPublicKey = (req, res) => {
-    res.status(200).json({ "message": null, "data": rsaUtil.getPublicKey() })
+    res.json(rsaUtil.getPublicKey())
 }
 
 exports.testerror = async (req, res) => {
