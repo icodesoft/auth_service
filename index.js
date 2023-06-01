@@ -70,17 +70,6 @@ app.get('/health', (req, res) => {
 
 // 全局异常处理
 app.use(error_handle)
-// app.use((err, req, res, next) => {
-//     let statusCode = err.statusCode || 500;
-//     if (err.name === "UnauthorizedError") {
-//         statusCode = 401;
-
-//         // return res.status(401).send("invalid token...");
-//     }
-
-//     console.error(new Date().toLocaleString(), req.originalUrl, statusCode, err.message, err.stack);
-//     return res.status(statusCode).json({ 'message': err.message });
-// });
 
 app.listen(server.port, () => {
     console.log(`Auth server running at http://${server.host}:${server.port}`)

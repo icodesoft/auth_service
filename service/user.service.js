@@ -1,11 +1,11 @@
 const jwtUtil = require('../util/jwt.util');
 const rsaUtil = require('../util/rsa.util');
-const { User } = require('../model/user.model');
-const { Op } = require('sequelize');
+const { User, sequelize } = require('../model/user.model');
+const { Op, QueryTypes } = require('sequelize');
 const bcrypt = require('bcryptjs')
 
 const request = require('request');
-const { NotFoundError, InvalidParameterError } = require('../exceptions/error');
+const { NotFoundError, InvalidParameterError, ApplicationError } = require('../exceptions/error');
 
 exports.register = async (req, res) => {
     const { username, password, nickname, email, user_pic } = req.body
@@ -19,12 +19,12 @@ exports.register = async (req, res) => {
 
     if (!user) {
         let newPassword = bcrypt.hashSync(password, 10);
-        let dbUser = User.build({username, newPassword, age: 22, email, fullName: 'Gary Gao', sex: 1, companyName: 'icodesoft'});
+        let dbUser = User.build({ username, newPassword, age: 22, email, fullName: 'Gary Gao', sex: 1, companyName: 'icodesoft' });
         console.log(JSON.stringify(dbUser, null, 2))
         // await dbUser.save();
     }
 
-    
+
 
     res.json(dbUser)
 }
@@ -68,11 +68,53 @@ exports.authorize = (req, res) => {
     }
 }
 
-exports.getUserById = (req, res) => {
-    if (req.params.id !== 1) {
-        throw new NotFoundError('User is not exist');
-    }
-    let user = { "id": req.params.id, "name": "ggary", "email": "gary@outlook.com" }
+exports.getUserById = async (req, res) => {
+    // if (req.params.id > 3) {
+    //     throw new NotFoundError('User is not exist');
+    // }
+    // let user = { "id": req.params.id, "name": "ggary", "email": "gary@outlook.com" }
+    // let user = await sequelize.query(`SELECT * FROM user WHERE ID=${req.params.id}`, {type: QueryTypes.SELECT});
+    let user;
+
+    /**
+     * Unmanaged transaction:
+     */
+    // const t = await sequelize.transaction();
+    // t.afterCommit(async () => {
+    //     user = await sequelize.query(`SELECT * FROM user WHERE ID=:id`, { replacements: { id: req.params.id * 1 }, type: QueryTypes.SELECT });
+    // })
+    // try {
+    //     const [results, metadata] = await sequelize.query(`UPDATE user SET age = 1;`, { transaction: t });
+    //     console.log(results, metadata);
+
+    //     const [results2, metadata2] = await sequelize.query(`UPDATE user SET age = 10 WHERE id = :id;`, { replacements: { id: req.params.id * 1 }, transaction: t });
+    //     console.log(results2, metadata2);
+    //     if (req.params.id == 1) {
+    //         throw new ApplicationError('Test transaction function', 500);
+    //     }
+    //     await t.commit();
+    // } catch (e) {
+    //     console.log(e);
+    //     await t.rollback();
+    // }
+
+    /**
+     * Managed transaction:
+     */
+    await sequelize.transaction(async (t) => {
+        t.afterCommit( async () => {
+            user = await sequelize.query(`SELECT * FROM user WHERE ID=:id`, { replacements: { id: req.params.id * 1 }, type: QueryTypes.SELECT });
+        });
+
+        const [results, metadata] = await sequelize.query(`UPDATE user SET age = 6;`);
+        console.log(results, metadata);
+
+        const [results2, metadata2] = await sequelize.query(`UPDATE user SET age = 'fdgdsfdafdgdgdfgs' WHERE id = :id;`, { replacements: { id: req.params.id * 1 } });
+        console.log(results2, metadata2);
+    }).catch(e => {
+        console.log(e);
+    });
+
     res.json(user, 'ok');
 }
 
@@ -101,7 +143,7 @@ exports.testerror = async (req, res) => {
     res.status(200).send(cookieHeader);
 }
 
-function test (req, res, url) {
+function test(req, res, url) {
     const options = {
         'method': 'GET',
         'url': url
@@ -122,7 +164,7 @@ function test (req, res, url) {
                     console.log('promise error: ', e);
                     reject(e);
                 }
-                
+
                 resolve(response.headers);
             }
         })

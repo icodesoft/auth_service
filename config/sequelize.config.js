@@ -1,6 +1,12 @@
 const { Sequelize } = require('sequelize');
+
+// Automatically pass transactions to all queries
+const cls = require('cls-hooked');
 const { db } = require('./app.config')
-console.log("db info: ", db.name, db.username, db.password)
+const namespace = cls.createNamespace('auth-namespace');
+Sequelize.useCLS(namespace);
+
+console.log("db info: ", db.database, db.username, db.password)
 const sequelize = new Sequelize(db.database, db.username, db.password, {
   logging: console.log,
   host: db.host,

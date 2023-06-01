@@ -462,7 +462,38 @@ https://sequelize.org/docs/v6/core-concepts/model-basics/
     
     module.exports = {User, sequelize}
   ```
+### Transactions
+```javascript
+// Managed transaction:
+// npm i cls-hooked
+const cls = require('cls-hooked'); // Automatically pass transactions to all queries
+const namespace = cls.createNamespace('auth-namespace');
+Sequelize.useCLS(namespace);
+const sequelize = new Sequelize(....);
 
+await sequelize.transaction(async (t) => {
+  t.afterCommit(() => {
+    user = await sequelize.query(`SELECT * FROM user WHERE ID=:id`, { replacements: { id: 1 }, type: QueryTypes.SELECT });
+  });
+  const [results, metadata] = await sequelize.query(`UPDATE user SET age = 1 WHERE id=1;`);
+
+}).catch(e => {
+    console.log(e);
+});
+
+// Unmanaged transaction:
+const t = await sequelize.transaction();
+t.afterCommit(() => {
+   user = await sequelize.query(`SELECT * FROM user WHERE ID=:id`, { replacements: { id: 1 }, type: QueryTypes.SELECT, transaction: t });
+});
+try {
+  const [results, metadata] = await sequelize.query(`UPDATE user SET age = 1 WHERE id=1;`, { transaction: t });
+  await t.commit();
+} catch(e) {
+  await t.rollback();
+}
+
+```
   
 
 - 简单使用
